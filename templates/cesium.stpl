@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>CesiumJS: Add an integrated mesh layer (I3S)</title>
+    <!-- Include the CesiumJS JavaScript and CSS files -->
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.107/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.107/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        html,
+        body {
+
+            margin: 0px;
+            padding: 0px;
+            height: 100%;
+        }
+
+        #cesiumContainer {
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="cesiumContainer"></div>
+    <script type="module">
+
+        const cesiumAccessToken = "<%= access_token %>";
+        Cesium.Ion.defaultAccessToken = cesiumAccessToken;
+
+        const viewer = new Cesium.Viewer("cesiumContainer", {
+            timeline: false,
+            animation: false,
+            geocoder: false
+        });
+
+        const i3sLayer = `http://${window.location.host}/rest/<%= slpk_filename %>/SceneServer/layers/0`;
+
+        const cesium3dTilesetOptions = {
+            skipLevelOfDetail: false,
+            debugShowBoundingVolume: false,
+        };
+
+        const i3sProvider = await Cesium.I3SDataProvider.fromUrl(i3sLayer, {
+            traceFetches: false,
+            cesium3dTilesetOptions: cesium3dTilesetOptions, // options for internal Cesium3dTileset
+        })
+
+        viewer.scene.primitives.add(i3sProvider);
+
+        const center = Cesium.Rectangle.center(i3sProvider.extent);
+        center.height = 10000.0;
+        viewer.camera.setView({
+            destination: Cesium.Ellipsoid.WGS84.cartographicToCartesian(center),
+        });
+
+        viewer.scene.light = new Cesium.DirectionalLight({
+            direction: new Cesium.Cartesian3(1, 0, 0)
+        });
+
+        viewer.scene.preRender.addEventListener(function (scene, time) {
+            viewer.scene.light.direction = Cesium.Cartesian3.clone(scene.camera.directionWC, viewer.scene.light.direction);
+        });
+    </script>
+</body>
+
+</html>
